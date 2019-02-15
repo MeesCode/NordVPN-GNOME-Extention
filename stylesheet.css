@@ -1,0 +1,16 @@
+.protected {
+    font-weight: bold;
+    color: #ffffff;
+    background-color: rgba(92, 255, 92, 0.7);
+}
+
+.unprotected {
+    font-weight: bold;
+    color: #ffffff;
+    background-color: rgba(255, 64, 64, 0.7);
+}
+
+.nordvpn{
+    border-radius: 5px;
+    padding: 0 3px;
+}
