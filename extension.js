@@ -49,6 +49,14 @@ const NordVPN = new Lang.Class({
 
     _getStatus: function () {
 
+        let inactive_params = {
+            reactive: true,
+            activate: true,
+            hover: false,
+            style_class: null,
+            can_focus: false
+        };
+
         let status = this._parseOutput(GLib.spawn_command_line_sync('nordvpn status')[1].toString());
         this.menu.removeAll();
 
@@ -57,15 +65,15 @@ const NordVPN = new Lang.Class({
             this.icon.style_class = 'nordvpn system-status-icon connected';
 
             // ip
-            this.ipItem = new PopupMenu.PopupMenuItem(status['Your new IP'], {});
+            this.ipItem = new PopupMenu.PopupMenuItem(status['Your new IP'], inactive_params);
             this.menu.addMenuItem(this.ipItem);
 
             // server
-            this.serverItem = new PopupMenu.PopupMenuItem(status['Current server'], {});
+            this.serverItem = new PopupMenu.PopupMenuItem(status['Current server'], inactive_params);
             this.menu.addMenuItem(this.serverItem);
 
             // location
-            this.locationItem = new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], {});
+            this.locationItem = new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], inactive_params);
             this.menu.addMenuItem(this.locationItem);
 
             // spacer
