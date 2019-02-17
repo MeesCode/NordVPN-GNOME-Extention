@@ -18,7 +18,7 @@ const NordVPN = new Lang.Class({
 
         // Icon
         this.icon = new St.Icon({
-            style_class: "nordvpn system-status-icon connected"
+            style_class: "nordvpn system-status-icon disconnected"
         });
         this.actor.add_actor(this.icon);
 
@@ -65,6 +65,8 @@ const NordVPN = new Lang.Class({
                 }
 
                 let data = JSON.parse(message.response_body.data);
+                log(data.status);
+
                 if (data.status) {
                     // icon
                     this.icon.style_class = 'nordvpn system-status-icon connected';
@@ -83,8 +85,10 @@ const NordVPN = new Lang.Class({
                     this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
                         if (value) {
                             Main.Util.trySpawnCommandLine('nordvpn c');
+                            this.connectItem.setStatus('refreshing...');
                         } else {
                             Main.Util.trySpawnCommandLine('nordvpn d');
+                            this.connectItem.setStatus('refreshing...');
                         }
                     }));
 
@@ -98,8 +102,10 @@ const NordVPN = new Lang.Class({
                     this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
                         if (value) {
                             Main.Util.trySpawnCommandLine('nordvpn c');
+                            this.connectItem.setStatus('refreshing...');
                         } else {
                             Main.Util.trySpawnCommandLine('nordvpn d');
+                            this.connectItem.setStatus('refreshing...');
                         }
                     }));
 
