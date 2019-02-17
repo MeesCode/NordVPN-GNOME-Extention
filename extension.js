@@ -86,14 +86,7 @@ const NordVPN = new Lang.Class({
                         } else {
                             Main.Util.trySpawnCommandLine('nordvpn d');
                         }
-
                     }));
-
-                    // disconnect button
-                    // this.menu.addAction("disconnect", function (event) {
-                    //     Main.Util.trySpawnCommandLine('nordvpn d');
-                    //     this._refresh();
-                    // });
 
                 } else {
                     //icon
@@ -108,14 +101,8 @@ const NordVPN = new Lang.Class({
                         } else {
                             Main.Util.trySpawnCommandLine('nordvpn d');
                         }
-
                     }));
 
-                    // connect button
-                    // this.menu.addAction("connect", function (event) {
-                    //     Main.Util.trySpawnCommandLine('nordvpn c');
-                    //     this._refresh();
-                    // });
                 }
             })
         );
