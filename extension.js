@@ -3,10 +3,7 @@ const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
 const St = imports.gi.St;
-const Soup = imports.gi.Soup;
 const Mainloop = imports.mainloop;
-const Util = imports.misc.util;
-const GLib = imports.gi.GLib;
 const ExtensionUtils = imports.misc.extensionUtils;
 
 const Me = ExtensionUtils.getCurrentExtension();
