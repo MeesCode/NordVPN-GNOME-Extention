@@ -1,33 +1,26 @@
-const St = imports.gi.St;
-const GLib = imports.gi.GLib;
-const Main = imports.ui.main;
-const Soup = imports.gi.Soup;
 const Lang = imports.lang;
-const Mainloop = imports.mainloop;
-const Clutter = imports.gi.Clutter;
+const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
+const PopupMenu = imports.ui.popupMenu;
+const St = imports.gi.St;
+const Soup = imports.gi.Soup;
+const Mainloop = imports.mainloop;
 
 const API_URL = 'https://nordvpn.com/wp-admin/admin-ajax.php';
 
-let _httpSession;
-
-function log(msg) {
-    global.log('[NordVPN] ' + msg);
-}
-
-const NordVPN = new Lang.Class({
-    Name: 'NordVPN',
+const TimeButton = new Lang.Class({
+    Name: "TimeButton status",
     Extends: PanelMenu.Button,
-    serverLookUpTable: undefined,
 
     _init: function () {
-        this.parent(0.0, 'NordVPN Status', false);
-        this.buttonText = new St.Label({
-            text: _('Checking...'),
-            y_align: Clutter.ActorAlign.CENTER
+        this.parent(null, "TimeButton status");
+
+        // Icon
+        this.icon = new St.Icon({
+            style_class: "nordvpn system-status-icon connected"
         });
-        this.actor.add_actor(this.buttonText);
-        this._refresh();
+        this.actor.add_actor(this.icon);
+
     },
 
     _refresh: function () {
@@ -36,6 +29,13 @@ const NordVPN = new Lang.Class({
         this._removeTimeout();
         this._timeout = Mainloop.timeout_add_seconds(30, Lang.bind(this, this._refresh));
         return true;
+    },
+
+    _removeTimeout: function () {
+        if (this._timeout) {
+            Mainloop.source_remove(this._timeout);
+            this._timeout = null;
+        }
     },
 
     _getStatus: function () {
@@ -48,55 +48,55 @@ const NordVPN = new Lang.Class({
         let message = Soup.form_request_new_from_hash('GET', API_URL, params);
         _httpSession.queue_message(message, Lang.bind(this,
             function (_httpSession, message) {
+                //remove old menu entreis
+
+
                 if (message.status_code !== 200) {
                     log('http request failed; status:' + message.status_code);
-                    log('http request failed; body:' + message.response_body.data);
+                    this.icon.style_class = 'nordvpn system-status-icon disconnected';
+                    // status
+                    this.ipItem = new PopupMenu.PopupMenuItem('no connection info', {});
+                    this.menu.addMenuItem(this.ipItem);
                     return;
                 }
-                let json = JSON.parse(message.response_body.data);
-                log('http request successful; body:' + message.response_body.data);
-                if (json.status) {
-                    this.buttonText.style_class = 'nordvpn protected';
-                    this.buttonText.set_text(json.ip);
-                } else {
-                    this.buttonText.style_class = 'nordvpn unprotected';
-                    this.buttonText.set_text('not connected');
-                }
+                let data = JSON.parse(message.response_body.data);
+                log('data parsed');
+                if (data.status) {
+                    this.icon.style_class = 'nordvpn system-status-icon connected';
 
+                    // status
+                    this.statusItem = new PopupMenu.PopupMenuItem('connected', {});
+                    this.menu.addMenuItem(this.statusItem);
+
+                    // ip
+                    this.ipItem = new PopupMenu.PopupMenuItem(data.ip, {});
+                    this.menu.addMenuItem(this.ipItem);
+
+                    // location
+                    this.locationItem = new PopupMenu.PopupMenuItem(data.location, {});
+                    this.menu.addMenuItem(this.locationItem);
+                } else {
+                    this.icon.style_class = 'nordvpn system-status-icon disconnected';
+                    // status
+                    this.statusItem = new PopupMenu.PopupMenuItem('not connected', {});
+                    this.menu.addMenuItem(this.statusItem);
+                }
             })
         );
-    },
-
-    _removeTimeout: function () {
-        if (this._timeout) {
-            Mainloop.source_remove(this._timeout);
-            this._timeout = null;
-        }
-    },
-
-    stop: function () {
-        if (_httpSession !== undefined)
-            _httpSession.abort();
-        _httpSession = undefined;
-
-        if (this._timeout)
-            Mainloop.source_remove(this._timeout);
-        this._timeout = undefined;
-
-        this.menu.removeAll();
     }
+
 });
 
-let widget;
-
-function init() { }
+function init() {
+}
 
 function enable() {
-    widget = new NordVPN;
-    Main.panel.addToStatusArea('NordVPN-status', widget);
+    let indicator = new TimeButton();
+    indicator._refresh();
+    Main.panel.addToStatusArea("this-is-test", indicator);
 }
 
 function disable() {
-    widget.stop();
-    widget.destroy();
+    // you could also track "indicator" and just call indicator.destroy()
+    Main.panel.statusArea["this-is-test"].destroy();
 }

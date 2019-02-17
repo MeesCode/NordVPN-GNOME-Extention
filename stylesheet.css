@@ -1,16 +1,14 @@
-.protected {
-    font-weight: bold;
-    color: #ffffff;
-    background-color: rgba(92, 255, 92, 0.7);
+
+
+.nordvpn {
+    background-size: 1.2em;
+    padding: 0 5px;
 }
 
-.unprotected {
-    font-weight: bold;
-    color: #ffffff;
-    background-color: rgba(255, 64, 64, 0.7);
+.connected{
+    background-image: url("icons/connected.svg");
 }
 
-.nordvpn{
-    border-radius: 5px;
-    padding: 0 3px;
+.disconnected{
+    background-image: url("icons/disconnected.svg");
 }
