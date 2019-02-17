@@ -124,5 +124,4 @@ function enable() {
 function disable() {
     // you could also track "indicator" and just call indicator.destroy()
     Main.panel.statusArea["nordvpn-status"].destroy();
-    indicator.destroy();
 }
