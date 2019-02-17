@@ -6,6 +6,11 @@ const St = imports.gi.St;
 const Soup = imports.gi.Soup;
 const Mainloop = imports.mainloop;
 const Util = imports.misc.util;
+const GLib = imports.gi.GLib;
+const ExtensionUtils = imports.misc.extensionUtils;
+
+const Me = ExtensionUtils.getCurrentExtension();
+const TerminalReader = Me.imports.terminal_reader;
 
 const API_URL = 'https://nordvpn.com/wp-admin/admin-ajax.php';
 
@@ -25,7 +30,6 @@ const NordVPN = new Lang.Class({
     },
 
     _refresh: function () {
-        log('Refreshing');
         this._getStatus();
         this._removeTimeout();
         this._timeout = Mainloop.timeout_add_seconds(30, Lang.bind(this, this._refresh));
@@ -39,79 +43,65 @@ const NordVPN = new Lang.Class({
         }
     },
 
+    _parseOutput: function (raw) {
+        let status = {};
+        let result = raw.split("\n");
+        result.forEach(function (line, idx) {
+            line = line.split(': ');
+            status[line[0]] = line[1];
+        });
+        return status;
+    },
+
     _getStatus: function () {
-        _httpSession = new Soup.Session();
+        let ts = new TerminalReader.TerminalReader('nordvpn status', (cmd, success, result) => {
 
-        let params = {
-            action: 'get_user_info_data'
-        };
+            this.menu.removeAll();
 
-        let message = Soup.form_request_new_from_hash('GET', API_URL, params);
-        _httpSession.queue_message(message, Lang.bind(this,
-            function (_httpSession, message) {
-                //remove old menu entries
-                this.menu.removeAll();
+            let status = this._parseOutput(result);
 
-                if (message.status_code !== 200) {
-                    log('http request failed; status:' + message.status_code);
+            if (status['Your new IP']) {
+                // icon
+                this.icon.style_class = 'nordvpn system-status-icon connected';
 
-                    // icon
-                    this.icon.style_class = 'nordvpn system-status-icon disconnected';
+                // ip
+                this.ipItem = new PopupMenu.PopupMenuItem(status['Your new IP'], {});
+                this.menu.addMenuItem(this.ipItem);
 
-                    // status
-                    this.ipItem = new PopupMenu.PopupMenuItem('no connection info', {});
-                    this.menu.addMenuItem(this.ipItem);
-                    return;
-                }
+                // server
+                this.serverItem = new PopupMenu.PopupMenuItem(status['Current server'], {});
+                this.menu.addMenuItem(this.serverItem);
 
-                let data = JSON.parse(message.response_body.data);
-                log(data.status);
+                // location
+                this.locationItem = new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], {});
+                this.menu.addMenuItem(this.locationItem);
 
-                if (data.status) {
-                    // icon
-                    this.icon.style_class = 'nordvpn system-status-icon connected';
+                this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
+                this.menu.addMenuItem(this.connectItem);
+            } else {
+                //icon
+                this.icon.style_class = 'nordvpn system-status-icon disconnected';
 
-                    // ip
-                    this.ipItem = new PopupMenu.PopupMenuItem(data.ip, {});
-                    this.menu.addMenuItem(this.ipItem);
+                this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
+                this.menu.addMenuItem(this.connectItem);
+            }
 
-                    // location
-                    this.locationItem = new PopupMenu.PopupMenuItem(data.location, {});
-                    this.menu.addMenuItem(this.locationItem);
-
-                    this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
-                    this.menu.addMenuItem(this.connectItem);
-
-                    this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
-                        if (value) {
-                            Main.Util.trySpawnCommandLine('nordvpn c');
-                            this.connectItem.setStatus('refreshing...');
-                        } else {
-                            Main.Util.trySpawnCommandLine('nordvpn d');
-                            this.connectItem.setStatus('refreshing...');
-                        }
-                    }));
-
+            this.connectItem.connect('toggled', Lang.bind(this, (object, value) => {
+                if (value) {
+                    let tr = new TerminalReader.TerminalReader('nordvpn connect', (cmd, success, result) => {
+                        this._refresh();
+                    });
+                    tr.executeReader();
                 } else {
-                    //icon
-                    this.icon.style_class = 'nordvpn system-status-icon disconnected';
-
-                    this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
-                    this.menu.addMenuItem(this.connectItem);
-
-                    this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
-                        if (value) {
-                            Main.Util.trySpawnCommandLine('nordvpn c');
-                            this.connectItem.setStatus('refreshing...');
-                        } else {
-                            Main.Util.trySpawnCommandLine('nordvpn d');
-                            this.connectItem.setStatus('refreshing...');
-                        }
-                    }));
-
+                    let tr = new TerminalReader.TerminalReader('nordvpn disconnect', (cmd, success, result) => {
+                        this._refresh();
+                    });
+                    tr.executeReader();
                 }
-            })
-        );
+            }));
+        });
+
+        ts.executeReader();
     }
 
 });
@@ -128,4 +118,5 @@ function enable() {
 function disable() {
     // you could also track "indicator" and just call indicator.destroy()
     Main.panel.statusArea["nordvpn-status"].destroy();
+    indicator.destroy();
 }
