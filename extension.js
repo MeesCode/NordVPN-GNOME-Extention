@@ -76,12 +76,18 @@ const NordVPN = new Lang.Class({
                 this.locationItem = new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], {});
                 this.menu.addMenuItem(this.locationItem);
 
+                // spacer
+                this.spacerItem = new PopupMenu.PopupSeparatorMenuItem();
+                this.menu.addMenuItem(this.spacerItem);
+
+                // connection switch
                 this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
                 this.menu.addMenuItem(this.connectItem);
             } else {
                 //icon
                 this.icon.style_class = 'nordvpn system-status-icon disconnected';
 
+                // connection switch
                 this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
                 this.menu.addMenuItem(this.connectItem);
             }
