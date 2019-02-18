@@ -20,16 +20,24 @@ const NordVPN = new Lang.Class({
 
         // Icon
         this.icon = new St.Icon({
-            style_class: "nordvpn system-status-icon disconnected"
+            style_class: "nordvpn system-status-icon changing"
         });
         this.actor.add_actor(this.icon);
+
+        this.inactive_params = {
+            reactive: true,
+            activate: true,
+            hover: false,
+            style_class: null,
+            can_focus: false
+        };
 
     },
 
     _refresh: function () {
         this._getStatus();
         this._removeTimeout();
-        this._timeout = Mainloop.timeout_add_seconds(30, Lang.bind(this, this._refresh));
+        this._timeout = Mainloop.timeout_add_seconds(60, Lang.bind(this, this._refresh));
         return true;
     },
 
@@ -51,67 +59,43 @@ const NordVPN = new Lang.Class({
     },
 
     _getStatus: function () {
-
         let tr = new TerminalReader.TerminalReader('nordvpn status', (cmd, success, result) => {
-            let status = this._parseOutput(result);
-
-            let inactive_params = {
-                reactive: true,
-                activate: true,
-                hover: false,
-                style_class: null,
-                can_focus: false
-            };
-
-            this.menu.removeAll();
-
-            if (status['Your new IP']) {
-                // icon
-                this.icon.style_class = 'nordvpn system-status-icon connected';
-
-                // ip
-                this.ipItem = new PopupMenu.PopupMenuItem(status['Your new IP'], inactive_params);
-                this.menu.addMenuItem(this.ipItem);
-
-                // server
-                this.serverItem = new PopupMenu.PopupMenuItem(status['Current server'], inactive_params);
-                this.menu.addMenuItem(this.serverItem);
-
-                // location
-                this.locationItem = new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], inactive_params);
-                this.menu.addMenuItem(this.locationItem);
-
-                // spacer
-                this.spacerItem = new PopupMenu.PopupSeparatorMenuItem();
-                this.menu.addMenuItem(this.spacerItem);
-
-                // connection switch
-                this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
-                this.menu.addMenuItem(this.connectItem);
-            } else {
-                //icon
-                this.icon.style_class = 'nordvpn system-status-icon disconnected';
-
-                // connection switch
-                this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
-                this.menu.addMenuItem(this.connectItem);
-            }
-
-            this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
-                this.icon.style_class = 'nordvpn system-status-icon changing';
-                if (value) {
-                    this.connectItem.setStatus('establishing...');
-                    this._connect();
-                } else {
-                    this.connectItem.setStatus('closing...');
-                    this._disconnect();
-                }
-            }));
-
+            this._drawMenu(this._parseOutput(result));
         });
-
         tr.executeReader();
+    },
 
+    _drawMenu: function (status) {
+        this.menu.removeAll();
+
+        if (status['Your new IP']) {
+            this.icon.style_class = 'nordvpn system-status-icon connected';
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Your new IP'], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Current server'], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+            // connection switch
+            this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
+            this.menu.addMenuItem(this.connectItem);
+        } else {
+            this.icon.style_class = 'nordvpn system-status-icon disconnected';
+
+            // connection switch
+            this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
+            this.menu.addMenuItem(this.connectItem);
+        }
+
+        this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
+            this.icon.style_class = 'nordvpn system-status-icon changing';
+            if (value) {
+                this.connectItem.setStatus('establishing...');
+                this._connect();
+            } else {
+                this.connectItem.setStatus('closing...');
+                this._disconnect();
+            }
+        }));
     },
 
     _disconnect: function () {
