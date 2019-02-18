@@ -15,15 +15,20 @@ const NordVPN = new Lang.Class({
     _init: function () {
         this.parent(null, "NordVPN status");
 
-        // Icon
-        this.icon = new St.Icon({
-            style_class: "nordvpn system-status-icon changing"
+        let hbox = new St.BoxLayout({ 
+            style_class: 'panel-status-menu-box' 
         });
-        this.actor.add_actor(this.icon);
+        this.icon = new St.Icon({
+            icon_name: 'nordvpn-changing',
+            style_class: "system-status-icon"
+        });
+        hbox.add_child(this.icon);
+        //hbox.add(PopupMenu.arrowIcon(St.Side.BOTTOM));
+        this.actor.add_child(hbox);
 
         this.inactive_params = {
             reactive: true,
-            activate: true,
+            activate: false,
             hover: false,
             style_class: null,
             can_focus: false
@@ -58,15 +63,14 @@ const NordVPN = new Lang.Class({
     _getStatus: function () {
         let tr = new TerminalReader.TerminalReader('nordvpn status', (cmd, success, result) => {
             this._drawMenu(this._parseOutput(result));
-        });
-        tr.executeReader();
+        }).executeReader();
     },
 
     _drawMenu: function (status) {
         this.menu.removeAll();
 
         if (status['Your new IP']) {
-            this.icon.style_class = 'nordvpn system-status-icon connected';
+            this.icon.icon_name = 'nordvpn-connected';
             this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Your new IP'], this.inactive_params));
             this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Current server'], this.inactive_params));
             this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], this.inactive_params));
@@ -76,7 +80,7 @@ const NordVPN = new Lang.Class({
             this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
             this.menu.addMenuItem(this.connectItem);
         } else {
-            this.icon.style_class = 'nordvpn system-status-icon disconnected';
+            this.icon.icon_name = 'nordvpn-disconnected';
 
             // connection switch
             this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
@@ -84,7 +88,7 @@ const NordVPN = new Lang.Class({
         }
 
         this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
-            this.icon.style_class = 'nordvpn system-status-icon changing';
+            this.icon.icon_name = 'nordvpn-changing';
             if (value) {
                 this.connectItem.setStatus('establishing...');
                 this._connect();
@@ -98,29 +102,28 @@ const NordVPN = new Lang.Class({
     _disconnect: function () {
         let tr = new TerminalReader.TerminalReader('nordvpn d > /dev/null ; echo disconnected', (cmd, success, result) => {
             this._getStatus();
-        });
-        tr.executeReader();
+        }).executeReader();
     },
 
     _connect: function () {
         let tr = new TerminalReader.TerminalReader('nordvpn c > /dev/null ; echo connected', (cmd, success, result) => {
             this._getStatus();
-        });
-        tr.executeReader();
+        }).executeReader();
     }
 
 });
 
-function init() {
+function init(metadata) {
+    let theme = imports.gi.Gtk.IconTheme.get_default();
+    theme.append_search_path(metadata.path + "/icons");
 }
 
 function enable() {
-    let indicator = new NordVPN();
-    indicator._refresh();
-    Main.panel.addToStatusArea("nordvpn-status", indicator);
+    let nordvpn = new NordVPN();
+    nordvpn._refresh();
+    Main.panel.addToStatusArea("nordvpn-status", nordvpn);
 }
 
 function disable() {
-    // you could also track "indicator" and just call indicator.destroy()
     Main.panel.statusArea["nordvpn-status"].destroy();
 }
