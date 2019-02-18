@@ -8,7 +8,6 @@ const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 const TerminalReader = Me.imports.terminalReader;
 
-
 const NordVPN = new Lang.Class({
     Name: "NordVPN status",
     Extends: PanelMenu.Button,
