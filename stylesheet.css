@@ -2,7 +2,7 @@
 
 .nordvpn {
     background-size: 1.2em;
-    padding: 0 5px;
+    /* padding: 0 5px; */
 }
 
 .connected{
@@ -11,4 +11,8 @@
 
 .disconnected{
     background-image: url("icons/disconnected.svg");
+}
+
+.changing{
+    background-image: url("icons/changing.svg");
 }

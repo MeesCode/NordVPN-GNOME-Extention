@@ -98,14 +98,13 @@ const NordVPN = new Lang.Class({
             }
 
             this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
+                this.icon.style_class = 'nordvpn system-status-icon changing';
                 if (value) {
-                    Main.Util.trySpawnCommandLine('nordvpn c');
-                    this.connectItem.setStatus('refreshing...');
-                    // this._connect();
+                    this.connectItem.setStatus('establishing...');
+                    this._connect();
                 } else {
-                    Main.Util.trySpawnCommandLine('nordvpn d');
-                    this.connectItem.setStatus('refreshing...');
-                    // this._disconnect();
+                    this.connectItem.setStatus('closing...');
+                    this._disconnect();
                 }
             }));
 
@@ -116,14 +115,14 @@ const NordVPN = new Lang.Class({
     },
 
     _disconnect: function () {
-        let tr = new TerminalReader.TerminalReader('nordvpn d', (cmd, success, result) => {
+        let tr = new TerminalReader.TerminalReader('nordvpn d > /dev/null ; echo disconnected', (cmd, success, result) => {
             this._getStatus();
         });
         tr.executeReader();
     },
 
     _connect: function () {
-        let tr = new TerminalReader.TerminalReader('nordvpn c', (cmd, success, result) => {
+        let tr = new TerminalReader.TerminalReader('nordvpn c > /dev/null ; echo connected', (cmd, success, result) => {
             this._getStatus();
         });
         tr.executeReader();
