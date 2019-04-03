@@ -1,0 +1,12 @@
+.connected {
+    background-image: url("nordvpn-connected.svg");
+}
+
+.changing {
+    background-image: url("nordvpn-changing.svg");
+}
+
+.disconnected {
+    background-image: url("nordvpn-disconnected.svg");
+}
+
