@@ -91,36 +91,49 @@ const NordVPN = new Lang.Class({
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
             // connection switch
-            this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
-            this.menu.addMenuItem(this.connectItem);
+            this.disconnectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
+            this.menu.addMenuItem(this.disconnectItem);
+
+            this.disconnectItem.connect('toggled', Lang.bind(this, function (object, value) {
+                this.icon.set_gicon(this._getCustIcon('nordvpn-changing-symbolic'));
+                this.disconnectItem.setStatus('closing...');
+                this._disconnect();
+            }));
+            
         } else {
             this.icon.set_gicon(this._getCustIcon('nordvpn-disconnected-symbolic'));
 
             // connection switch
-            this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
-            this.menu.addMenuItem(this.connectItem);
+            this.connectItemNL = new PopupMenu.PopupSwitchMenuItem('connect (NL)', false);
+            this.menu.addMenuItem(this.connectItemNL);
+            this.connectItemUS = new PopupMenu.PopupSwitchMenuItem('connect (US)', false);
+            this.menu.addMenuItem(this.connectItemUS);
+
+            this.connectItemNL.connect('toggled', Lang.bind(this, function (object, value) {
+                this.icon.set_gicon(this._getCustIcon('nordvpn-changing-symbolic'));
+                this.connectItemNL.setStatus('establishing...');
+                this.connectItemUS.setStatus('ignoring...');
+                this._connect('netherlands');
+            }));
+    
+            this.connectItemUS.connect('toggled', Lang.bind(this, function (object, value) {
+                this.icon.set_gicon(this._getCustIcon('nordvpn-changing-symbolic'));
+                this.connectItemUS.setStatus('establishing...');
+                this.connectItemNL.setStatus('ignoring...');
+                this._connect('united_states');
+            }));
         }
 
-        this.connectItem.connect('toggled', Lang.bind(this, function (object, value) {
-            this.icon.set_gicon(this._getCustIcon('nordvpn-changing-symbolic'));
-            if (value) {
-                this.connectItem.setStatus('establishing...');
-                this._connect();
-            } else {
-                this.connectItem.setStatus('closing...');
-                this._disconnect();
-            }
-        }));
     },
 
     _disconnect: function () {
-        let tr = new TerminalReader.TerminalReader('nordvpn d > /dev/null ; echo disconnected', (cmd, success, result) => {
+        new TerminalReader.TerminalReader('nordvpn d > /dev/null ; echo disconnected', (cmd, success, result) => {
             this._getStatus();
         }).executeReader();
     },
 
-    _connect: function () {
-        let tr = new TerminalReader.TerminalReader('nordvpn c > /dev/null ; echo connected', (cmd, success, result) => {
+    _connect: function (country) {
+        new TerminalReader.TerminalReader('nordvpn c '+ country +' > /dev/null ; echo connected', (cmd, success, result) => {
             this._getStatus();
         }).executeReader();
     }
@@ -128,11 +141,6 @@ const NordVPN = new Lang.Class({
 });
 
 let nordvpn;
-
-// function init(extensionMeta) {
-//     let theme = Gtk.IconTheme.get_default();
-//     theme.append_search_path(extensionMeta.path + "/icons");
-// }
 
 function enable() {
     nordvpn = new NordVPN();
