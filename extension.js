@@ -13,7 +13,7 @@ const Mainloop = imports.mainloop;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-let defaultCountry = 'netherlands';
+let defaultCountry = 'Netherlands';
 
 const NordVPN = new Lang.Class({
 	Name: 'NordVPN status',
@@ -49,8 +49,15 @@ const NordVPN = new Lang.Class({
 			can_focus: false
 		};
 
+		this.inactive_list_params = {
+			reactive: false,
+			activate: true,
+			hover: true,
+			style_class: null,
+			can_focus: true
+		};
+
 		this.countries = ['Albania', 'Greece', 'Portugal', 'Argentina', 'Hong_Kong', 'Romania', 'Australia', 'Hungary', 'Serbia', 'Austria', 'Iceland', 'Singapore', 'Belgium', 'India', 'Slovakia', 'Bosnia_And_Herzegovina', 'Indonesia', 'Slovenia', 'Brazil', 'Ireland', 'South_Africa', 'Bulgaria', 'Israel', 'South_Korea', 'Canada', 'Italy', 'Spain', 'Chile', 'Japan', 'Sweden', 'Costa_Rica', 'Latvia', 'Switzerland', 'Croatia', 'Luxembourg', 'Taiwan', 'Cyprus', 'Malaysia', 'Thailand', 'Czech_Republic', 'Mexico', 'Turkey', 'Denmark', 'Moldova', 'Ukraine', 'Estonia', 'Netherlands', 'United_Kingdom', 'Finland', 'New_Zealand', 'United_States', 'France', 'North_Macedonia', 'Vietnam', 'Georgia', 'Norway', 'Germany', 'Poland'];
-		
 
 	},
 
@@ -89,9 +96,9 @@ const NordVPN = new Lang.Class({
 			this.icon.set_gicon(this._getCustIcon('nordvpn-connected-symbolic'));
 
 			// stats
-			this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[4], this.inactive_params));
-			this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[1], this.inactive_params));
-			this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[2] + ', ' + status[3], this.inactive_params));
+			for(let i = 1; i < status.length - 1; i++){
+				this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[i], this.inactive_params));
+			}
 			this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 			// connection switch
@@ -103,6 +110,7 @@ const NordVPN = new Lang.Class({
 				this.disconnectItem.setStatus('closing...');
 				this._disconnect();
 			}));
+
 		} else {
 			// menu for when nordvpn is not connected
 
@@ -110,22 +118,28 @@ const NordVPN = new Lang.Class({
 			this.icon.set_gicon(this._getCustIcon('nordvpn-disconnected-symbolic'));
 
 			// country list submenu
-			// this.countryLabel = new St.Label('connect to: ' + defaultCountry);
-			// this.actor.add_actor(this.countryLabel);
+			this.menu.addMenuItem(new PopupMenu.PopupMenuItem('connect to: ' + defaultCountry, this.inactive_params));
 			let countryMenu = new PopupMenu.PopupSubMenuMenuItem('available countries');
 			for (let i of this.countries) {
-				let countryItem = new PopupMenu.PopupMenuItem(i);
+				let countryItem;
+				if(i == defaultCountry){
+					countryItem = new PopupMenu.PopupMenuItem(i + ' (current)', this.inactive_list_params);
+				} else {
+					countryItem = new PopupMenu.PopupMenuItem(i);
+				}
+				
 				countryMenu.menu.addMenuItem(countryItem);
 
 				countryItem.connect('activate', Lang.bind(this, (object, value) => {
 					defaultCountry = i;
+					this._refresh();
 				}));
 			}
 			this.menu.addMenuItem(countryMenu);
 			this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
 			// connection switch
-			this.connectItem = new PopupMenu.PopupSwitchMenuItem('connect');
+			this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection');
 			this.menu.addMenuItem(this.connectItem);
 
 			this.connectItem.connect('toggled', Lang.bind(this, (object, value) => {
