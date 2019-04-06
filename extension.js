@@ -69,7 +69,6 @@ const NordVPN = new Lang.Class({
     _getStatus: function () {
         let CMD = ['nordvpn', 'status']
         this._execCommand(CMD).then(stdout => {
-            stdout.split('\n').map(line => log(line));
             this._drawMenu(stdout.split('\n'));
         });
     },
@@ -125,7 +124,6 @@ const NordVPN = new Lang.Class({
 
     // disconnect nordvpn
     _disconnect: function () {
-        log("in disconnect function");
         let CMD = ['nordvpn', 'd'];
         this._execCommand(CMD).then(() => {
             this._getStatus();
@@ -134,7 +132,6 @@ const NordVPN = new Lang.Class({
 
     // connect to nordvpn
     _connect: function (country) {
-        log("in connect function");
         let CMD = ['nordvpn', 'c'];
         CMD.push(country);
         this._execCommand(CMD).then(() => {
