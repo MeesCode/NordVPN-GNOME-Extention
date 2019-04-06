@@ -13,12 +13,11 @@ const Mainloop = imports.mainloop;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-const TerminalReader = Me.imports.terminalReader;
-
 const NordVPN = new Lang.Class({
     Name: "NordVPN status",
     Extends: PanelMenu.Button,
 
+    // function to set custom icons from the 'icons' directory
     _getCustIcon: function(icon_name) {
 		let gicon = Gio.icon_new_for_string( Me.dir.get_child('icons').get_path() + "/" + icon_name + ".svg" );
 		return gicon;
@@ -50,6 +49,7 @@ const NordVPN = new Lang.Class({
 
     },
 
+    // refresh the refresh timer and update the connection status
     _refresh: function () {
         this._getStatus();
         this._removeTimeout();
@@ -57,6 +57,7 @@ const NordVPN = new Lang.Class({
         return true;
     },
 
+    // remove the refresh timer
     _removeTimeout: function () {
         if (this._timeout) {
             Mainloop.source_remove(this._timeout);
@@ -64,6 +65,7 @@ const NordVPN = new Lang.Class({
         }
     },
 
+    // parse terminal output
     _parseOutput: function (raw) {
         let status = {};
         let result = raw.split("\n");
@@ -74,20 +76,25 @@ const NordVPN = new Lang.Class({
         return status;
     },
 
+    // get the connection status
     _getStatus: function () {
-        let tr = new TerminalReader.TerminalReader('nordvpn status', (cmd, success, result) => {
-            this._drawMenu(this._parseOutput(result));
-        }).executeReader();
+        let CMD = ['nordvpn', 'status']
+        this._execCommand(CMD).then(stdout => {
+            stdout.split('\n').map(line => log(line));
+            this._drawMenu(stdout.split('\n'));
+        });
     },
 
+    // what happens after you've clicked the icon to build the menu
     _drawMenu: function (status) {
         this.menu.removeAll();
 
-        if (status['Your new IP']) {
+        if (status.length > 5) {
+            // build a menu for when nord vpn is connected
             this.icon.set_gicon(this._getCustIcon('nordvpn-connected-symbolic'));
-            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Your new IP'], this.inactive_params));
-            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Current server'], this.inactive_params));
-            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status['Country'] + ', ' + status['City'], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[4], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[1], this.inactive_params));
+            this.menu.addMenuItem(new PopupMenu.PopupMenuItem(status[2] + ', ' + status[3], this.inactive_params));
             this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
             // connection switch
@@ -101,6 +108,7 @@ const NordVPN = new Lang.Class({
             }));
             
         } else {
+            //build a menu for when nordvpn is disconnected
             this.icon.set_gicon(this._getCustIcon('nordvpn-disconnected-symbolic'));
 
             // connection switch
@@ -126,16 +134,48 @@ const NordVPN = new Lang.Class({
 
     },
 
+    // disconnect nordvpn
     _disconnect: function () {
-        new TerminalReader.TerminalReader('nordvpn d > /dev/null ; echo disconnected', (cmd, success, result) => {
+        log("in disconnect function");
+        let CMD = ['nordvpn', 'd'];
+        this._execCommand(CMD).then(stdout => {
             this._getStatus();
-        }).executeReader();
+        });
     },
 
+    // connect to nordvpn
     _connect: function (country) {
-        new TerminalReader.TerminalReader('nordvpn c '+ country +' > /dev/null ; echo connected', (cmd, success, result) => {
+        log("in connect function");
+        let CMD = ['nordvpn', 'c'];
+        CMD.push(country);
+        this._execCommand(CMD).then(stdout => {
             this._getStatus();
-        }).executeReader();
+        });
+    },
+
+    // execute a command asynchronously
+    _execCommand: async function (argv, cancellable=null) {
+        let proc = new Gio.Subprocess({
+            argv: argv,
+            flags: Gio.SubprocessFlags.STDOUT_PIPE
+        });
+
+        proc.init(null);
+
+        let stdout = await new Promise((resolve, reject) => {
+            proc.communicate_utf8_async(null, cancellable, (proc, res) => {
+                let ok, stdout, stderr;
+
+                try {
+                    [ok, stdout, stderr] = proc.communicate_utf8_finish(res);
+                    resolve(stdout);
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
+
+        return stdout;
     }
 
 });
