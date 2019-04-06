@@ -65,17 +65,6 @@ const NordVPN = new Lang.Class({
         }
     },
 
-    // parse terminal output
-    _parseOutput: function (raw) {
-        let status = {};
-        let result = raw.split("\n");
-        result.forEach(function (line, idx) {
-            line = line.split(': ');
-            status[line[0]] = line[1];
-        });
-        return status;
-    },
-
     // get the connection status
     _getStatus: function () {
         let CMD = ['nordvpn', 'status']
@@ -112,9 +101,9 @@ const NordVPN = new Lang.Class({
             this.icon.set_gicon(this._getCustIcon('nordvpn-disconnected-symbolic'));
 
             // connection switch
-            this.connectItemNL = new PopupMenu.PopupSwitchMenuItem('connect (NL)', false);
+            this.connectItemNL = new PopupMenu.PopupSwitchMenuItem('connect (NL)');
             this.menu.addMenuItem(this.connectItemNL);
-            this.connectItemUS = new PopupMenu.PopupSwitchMenuItem('connect (US)', false);
+            this.connectItemUS = new PopupMenu.PopupSwitchMenuItem('connect (US)');
             this.menu.addMenuItem(this.connectItemUS);
 
             this.connectItemNL.connect('toggled', Lang.bind(this, function (object, value) {
@@ -138,7 +127,7 @@ const NordVPN = new Lang.Class({
     _disconnect: function () {
         log("in disconnect function");
         let CMD = ['nordvpn', 'd'];
-        this._execCommand(CMD).then(stdout => {
+        this._execCommand(CMD).then(() => {
             this._getStatus();
         });
     },
@@ -148,12 +137,14 @@ const NordVPN = new Lang.Class({
         log("in connect function");
         let CMD = ['nordvpn', 'c'];
         CMD.push(country);
-        this._execCommand(CMD).then(stdout => {
+        this._execCommand(CMD).then(() => {
             this._getStatus();
         });
     },
 
     // execute a command asynchronously
+    // all thanks to this article:
+    // https://github.com/andyholmes/andyholmes.github.io/blob/master/articles/asynchronous-programming-in-gjs.md
     _execCommand: async function (argv, cancellable=null) {
         let proc = new Gio.Subprocess({
             argv: argv,
