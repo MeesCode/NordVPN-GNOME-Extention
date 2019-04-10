@@ -16,6 +16,8 @@ const Me = ExtensionUtils.getCurrentExtension();
 const Data = Me.imports.data;
 const countries = Data.countries;
 const Prefs = Me.imports.prefs;
+const inactive_params = Data.inactive_params;
+const inactive_list_params = Data.inactive_list_params;
 
 let REFRESH_INTERVAL = 60;
 let DEFAULT_COUNTRY = 'United_States';
@@ -49,21 +51,10 @@ const NordVPN = new Lang.Class({
 
 		this._loadSettings();
 
-		this.inactive_params = {
-			reactive: true,
-			activate: false,
-			hover: false,
-			style_class: null,
-			can_focus: false
-		};
-
-		this.inactive_list_params = {
-			reactive: false,
-			activate: true,
-			hover: true,
-			style_class: null,
-			can_focus: true
-		};
+		this.open = false;
+		this.menu.connect('open-state-changed', Lang.bind(this, (self, open) => {
+			this.open = open;
+		}));
 
 	},
 
@@ -102,13 +93,15 @@ const NordVPN = new Lang.Class({
 
 	// build the popup menu
 	_drawMenu: function (status) {
-		this.menu.removeAll();
 
 		// if a 'current server' exists nordvpn must be connected
 		if (status['Status'] == 'Connected') {
+			this.menu.removeAll();
 			this.icon.set_gicon(this._getCustIcon('nordvpn-connected-symbolic'));
 			this._connectedMenu(status);
-		} else {
+		} else if (!this.open) {
+			// only update the menu if it is not open (this is to avoid closing the country list while it is open)
+			this.menu.removeAll();
 			this.icon.set_gicon(this._getCustIcon('nordvpn-disconnected-symbolic'));
 			this._disconnectedMenu();
 		}
@@ -118,7 +111,7 @@ const NordVPN = new Lang.Class({
 	_connectedMenu: function (status) {
 		// stats
 		Object.keys(status).map((key, index) => {
-			this.menu.addMenuItem(new PopupMenu.PopupMenuItem(`${key}: ${status[key]}`, this.inactive_params));
+			this.menu.addMenuItem(new PopupMenu.PopupMenuItem(`${key}: ${status[key]}`, inactive_params));
 		});
 		this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
@@ -136,12 +129,12 @@ const NordVPN = new Lang.Class({
 	// menu for when nordvpn is not connected
 	_disconnectedMenu: function () {
 		// country list submenu
-		this.menu.addMenuItem(new PopupMenu.PopupMenuItem('connect to: ' + countries[CURRENT_COUNTRY], this.inactive_params));
+		this.menu.addMenuItem(new PopupMenu.PopupMenuItem('connect to: ' + countries[CURRENT_COUNTRY], inactive_params));
 		let countryMenu = new PopupMenu.PopupSubMenuMenuItem('available countries');
 		for (let i in countries) {
 			let countryItem;
 			if (i == CURRENT_COUNTRY) {
-				countryItem = new PopupMenu.PopupMenuItem(countries[i] + ' (current)', this.inactive_list_params);
+				countryItem = new PopupMenu.PopupMenuItem(countries[i] + ' (current)', inactive_list_params);
 			} else {
 				countryItem = new PopupMenu.PopupMenuItem(countries[i]);
 			}
