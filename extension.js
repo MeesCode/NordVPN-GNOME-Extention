@@ -4,6 +4,7 @@ const St = imports.gi.St;
 const GObject = imports.gi.GObject;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
+const Clutter    = imports.gi.Clutter;
 
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
@@ -15,13 +16,17 @@ const Me = ExtensionUtils.getCurrentExtension();
 
 const Data = Me.imports.data;
 const countries = Data.countries;
+const themes = Data.themes;
 const Prefs = Me.imports.prefs;
 const inactive_params = Data.inactive_params;
 const inactive_list_params = Data.inactive_list_params;
 
 let REFRESH_INTERVAL = 60;
-let DEFAULT_COUNTRY = 'United_States';
-let CURRENT_COUNTRY = 'United_States';
+let DEFAULT_COUNTRY = 49;
+let CURRENT_COUNTRY = 49;
+let SHOW_IP = false;
+let SHOW_COUNTRY = false;
+let ICON_THEME = 0;
 
 const NordVPN = new Lang.Class({
 	Name: 'NordVPN status',
@@ -29,24 +34,26 @@ const NordVPN = new Lang.Class({
 
 	// function to set custom icons from the 'icons' directory
 	_getCustIcon: function(icon_name) {
-		let gicon = Gio.icon_new_for_string(Me.dir.get_child('icons').get_path() + '/' + icon_name + '.svg');
+		let gicon = Gio.icon_new_for_string(`${Me.dir.get_child('icons').get_path()}/${themes[ICON_THEME]}/${icon_name}.svg`);
 		return gicon;
 	},
 
 	_init: function () {
 		this.parent(0.0, 'NordVPN status');
 
+		let box = new St.BoxLayout({ 
+			style_class: 'panel-status-menu-box' 
+		});
 		this.icon = new St.Icon({
 			gicon: this._getCustIcon('nordvpn-changing-symbolic'),
 			style_class: 'system-status-icon'
 		});
-
-		let box = new St.BoxLayout({ 
-			vertical: false, 
-			style_class: 'panel-status-menu-box' 
+		this._buttonText = new St.Label({
+            text: _('text will be here'),
+            y_align: Clutter.ActorAlign.CENTER
 		});
-
 		box.add_child(this.icon);
+		box.add_child(this._buttonText);
 		this.actor.add_child(box);
 
 		this._loadSettings();
@@ -87,13 +94,13 @@ const NordVPN = new Lang.Class({
 			});
 
 			status = JSON.parse(JSON.stringify(status)); // ugly, but it cleans up the object real nice
+			this._updateTopbar(status);
 			this._drawMenu(status);
 		});
 	},
 
 	// build the popup menu
 	_drawMenu: function (status) {
-
 		// if a 'current server' exists nordvpn must be connected
 		if (status['Status'] == 'Connected') {
 			this.menu.removeAll();
@@ -160,6 +167,27 @@ const NordVPN = new Lang.Class({
 		}));
 	},
 
+	_updateTopbar: function(status){
+		
+		if((SHOW_IP || SHOW_COUNTRY) && status['Status'] == 'Connected'){
+            this._buttonText.visible = true;
+        } else {
+			this._buttonText.visible = false;
+		}
+
+        if(status['Status'] == 'Connected'){
+			if(SHOW_IP && SHOW_COUNTRY){
+				this._buttonText.set_text(`${status['Country']} ${status['Your new IP']}`);
+			}
+			if(SHOW_IP && !SHOW_COUNTRY){
+				this._buttonText.set_text(`${status['Your new IP']}`);
+			}
+			if(!SHOW_IP && SHOW_COUNTRY){
+				this._buttonText.set_text(`${status['Country']}`);
+			}
+        } 
+    },
+
 	// disconnect nordvpn
 	_disconnect: function () {
 		let CMD = ['nordvpn', 'd'];
@@ -189,7 +217,10 @@ const NordVPN = new Lang.Class({
 	// gather settings from gnome system
 	_fetchSettings: function () {
 		REFRESH_INTERVAL = this._settings.get_int(Prefs.Fields.REFRESH_INTERVAL);
+		ICON_THEME = this._settings.get_int(Prefs.Fields.ICON_THEME);
 		DEFAULT_COUNTRY = this._settings.get_int(Prefs.Fields.DEFAULT_COUNTRY);
+		SHOW_IP = this._settings.get_boolean(Prefs.Fields.SHOW_IP);
+		SHOW_COUNTRY = this._settings.get_boolean(Prefs.Fields.SHOW_COUNTRY);
 		CURRENT_COUNTRY = DEFAULT_COUNTRY;
 	},
 

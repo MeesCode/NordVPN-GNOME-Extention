@@ -4,16 +4,36 @@
 
     <key type="i" name="refresh-interval">
         <default>60</default>
-        <summary>The interval between updates in miliseconds</summary>
-        <description>The interval between updates in miliseconds </description>
+        <summary>The interval between updates in seconds</summary>
+        <description>The interval between updates in seconds </description>
         <range min="1" max="3600"/>
     </key>
 
     <key type="i" name="default-country">
-        <default>50</default>
-        <summary>The number of items to save in history</summary>
-        <description></description>
-        <range min="1" max="58"/>
+        <default>49</default>
+        <summary>the default country to connect to</summary>
+        <description>the default country to connect to</description>
+        <range min="0" max="57"/>
     </key>
+
+    <key type="i" name="icon-theme">
+        <default>0</default>
+        <summary>the theme of the icons in the top bar</summary>
+        <description>the theme of the icons in the top bar</description>
+        <range min="0" max="2"/>
+    </key>
+
+    <key type="b" name="show-ip">
+        <default>false</default>
+        <summary>show your ip address in the top bar</summary>
+        <description>show your ip address in the top bar</description>
+    </key>
+
+    <key type="b" name="show-country">
+        <default>false</default>
+        <summary>show your country in the top bar</summary>
+        <description>show your country in the top bar</description>
+    </key>
+
   </schema>
 </schemalist>
