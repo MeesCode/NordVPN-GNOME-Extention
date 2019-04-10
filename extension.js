@@ -13,7 +13,13 @@ const Mainloop = imports.mainloop;
 const ExtensionUtils = imports.misc.extensionUtils;
 const Me = ExtensionUtils.getCurrentExtension();
 
-let defaultCountry = 'Netherlands';
+const Data = Me.imports.data;
+const countries = Data.countries;
+const Prefs = Me.imports.prefs;
+
+let REFRESH_INTERVAL = 60;
+let DEFAULT_COUNTRY = 'United_States';
+let CURRENT_COUNTRY = 'United_States';
 
 const NordVPN = new Lang.Class({
 	Name: 'NordVPN status',
@@ -41,6 +47,8 @@ const NordVPN = new Lang.Class({
 		box.add_child(this.icon);
 		this.actor.add_child(box);
 
+		this._loadSettings();
+
 		this.inactive_params = {
 			reactive: true,
 			activate: false,
@@ -57,15 +65,13 @@ const NordVPN = new Lang.Class({
 			can_focus: true
 		};
 
-		this.countries = ['Albania', 'Greece', 'Portugal', 'Argentina', 'Hong_Kong', 'Romania', 'Australia', 'Hungary', 'Serbia', 'Austria', 'Iceland', 'Singapore', 'Belgium', 'India', 'Slovakia', 'Bosnia_And_Herzegovina', 'Indonesia', 'Slovenia', 'Brazil', 'Ireland', 'South_Africa', 'Bulgaria', 'Israel', 'South_Korea', 'Canada', 'Italy', 'Spain', 'Chile', 'Japan', 'Sweden', 'Costa_Rica', 'Latvia', 'Switzerland', 'Croatia', 'Luxembourg', 'Taiwan', 'Cyprus', 'Malaysia', 'Thailand', 'Czech_Republic', 'Mexico', 'Turkey', 'Denmark', 'Moldova', 'Ukraine', 'Estonia', 'Netherlands', 'United_Kingdom', 'Finland', 'New_Zealand', 'United_States', 'France', 'North_Macedonia', 'Vietnam', 'Georgia', 'Norway', 'Germany', 'Poland'];
-
 	},
 
 	// refresh the refresh timer and update the connection status
 	_refresh: function () {
 		this._updateMenu();
 		this._removeTimeout();
-		this._timeout = Mainloop.timeout_add_seconds(60, Lang.bind(this, this._refresh));
+		this._timeout = Mainloop.timeout_add_seconds(REFRESH_INTERVAL, Lang.bind(this, this._refresh));
 		return true;
 	},
 
@@ -94,7 +100,7 @@ const NordVPN = new Lang.Class({
 		});
 	},
 
-	// what happens after you've clicked the icon to build the menu
+	// build the popup menu
 	_drawMenu: function (status) {
 		this.menu.removeAll();
 
@@ -130,20 +136,20 @@ const NordVPN = new Lang.Class({
 	// menu for when nordvpn is not connected
 	_disconnectedMenu: function () {
 		// country list submenu
-		this.menu.addMenuItem(new PopupMenu.PopupMenuItem('connect to: ' + defaultCountry, this.inactive_params));
+		this.menu.addMenuItem(new PopupMenu.PopupMenuItem('connect to: ' + countries[CURRENT_COUNTRY], this.inactive_params));
 		let countryMenu = new PopupMenu.PopupSubMenuMenuItem('available countries');
-		for (let i of this.countries) {
+		for (let i in countries) {
 			let countryItem;
-			if (i == defaultCountry) {
-				countryItem = new PopupMenu.PopupMenuItem(i + ' (current)', this.inactive_list_params);
+			if (i == CURRENT_COUNTRY) {
+				countryItem = new PopupMenu.PopupMenuItem(countries[i] + ' (current)', this.inactive_list_params);
 			} else {
-				countryItem = new PopupMenu.PopupMenuItem(i);
+				countryItem = new PopupMenu.PopupMenuItem(countries[i]);
 			}
 
 			countryMenu.menu.addMenuItem(countryItem);
 
 			countryItem.connect('activate', Lang.bind(this, (object, value) => {
-				defaultCountry = i;
+				CURRENT_COUNTRY = i;
 				this._refresh();
 			}));
 		}
@@ -157,7 +163,7 @@ const NordVPN = new Lang.Class({
 		this.connectItem.connect('toggled', Lang.bind(this, (object, value) => {
 			this.icon.set_gicon(this._getCustIcon('nordvpn-changing-symbolic'));
 			this.connectItem.setStatus('establishing...');
-			this._connect(defaultCountry);
+			this._connect(countries[CURRENT_COUNTRY]);
 		}));
 	},
 
@@ -178,6 +184,28 @@ const NordVPN = new Lang.Class({
 		});
 	},
 
+	// gather user settings on startup
+	_loadSettings: function () {
+		this._settings = Prefs.SettingsSchema;
+		this._settingsChangedId = this._settings.connect('changed',
+			Lang.bind(this, this._onSettingsChange));
+
+		this._fetchSettings();
+	},
+
+	// gather settings from gnome system
+	_fetchSettings: function () {
+		REFRESH_INTERVAL = this._settings.get_int(Prefs.Fields.REFRESH_INTERVAL);
+		DEFAULT_COUNTRY = this._settings.get_int(Prefs.Fields.DEFAULT_COUNTRY);
+		CURRENT_COUNTRY = DEFAULT_COUNTRY;
+	},
+
+	// reload settings when something has changed
+	_onSettingsChange: function () {
+		this._fetchSettings();
+		this._refresh();
+	},
+
 	// execute a command asynchronously
 	// all thanks to this article:
 	// https://github.com/andyholmes/andyholmes.github.io/blob/master/articles/asynchronous-programming-in-gjs.md
@@ -192,13 +220,8 @@ const NordVPN = new Lang.Class({
 		let stdout = await new Promise((resolve, reject) => {
 			proc.communicate_utf8_async(null, cancellable, (proc, res) => {
 				let ok, stdout, stderr;
-
-				try {
-					[ok, stdout, stderr] = proc.communicate_utf8_finish(res);
-					resolve(stdout);
-				} catch (e) {
-					reject(e);
-				}
+				[ok, stdout, stderr] = proc.communicate_utf8_finish(res);
+				resolve(stdout);
 			});
 		});
 
