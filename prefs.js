@@ -105,8 +105,8 @@ const App = new Lang.Class({
 		this.main.attach(this.field_interval, 4, 1, 2, 1);
 		this.main.attach(this.field_default_country, 4, 2, 2, 1);
 		this.main.attach(this.field_icon_theme, 4, 3, 2, 1);
-		this.main.attach(this.field_show_ip, 4, 4, 2, 1);
-		this.main.attach(this.field_show_country, 4, 5, 2, 1);
+		this.main.attach(this.field_show_ip, 5, 4, 1, 1);
+		this.main.attach(this.field_show_country, 5, 5, 1, 1);
 
 		SettingsSchema.bind(Fields.REFRESH_INTERVAL, this.field_interval, 'value', Gio.SettingsBindFlags.DEFAULT);
 		SettingsSchema.bind(Fields.DEFAULT_COUNTRY, this.field_default_country, 'active', Gio.SettingsBindFlags.DEFAULT);
