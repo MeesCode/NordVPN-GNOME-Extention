@@ -5,6 +5,7 @@ const GObject = imports.gi.GObject;
 const GLib = imports.gi.GLib;
 const Gio = imports.gi.Gio;
 const Clutter    = imports.gi.Clutter;
+const Util = imports.misc.util;
 
 const Main = imports.ui.main;
 const PanelMenu = imports.ui.panelMenu;
@@ -122,6 +123,11 @@ const NordVPN = new Lang.Class({
 		});
 		this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+		// Add 'Settings' menu item to open settings
+		let settingsMenuItem = new PopupMenu.PopupMenuItem(_('Settings'));
+		this.menu.addMenuItem(settingsMenuItem);
+		settingsMenuItem.connect('activate', Lang.bind(this, this._openSettings));
+
 		// connection switch
 		this.disconnectItem = new PopupMenu.PopupSwitchMenuItem('connection', true);
 		this.menu.addMenuItem(this.disconnectItem);
@@ -156,6 +162,11 @@ const NordVPN = new Lang.Class({
 		this.menu.addMenuItem(countryMenu);
 		this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
+		// Add 'Settings' menu item to open settings
+		let settingsMenuItem = new PopupMenu.PopupMenuItem(_('Settings'));
+		this.menu.addMenuItem(settingsMenuItem);
+		settingsMenuItem.connect('activate', Lang.bind(this, this._openSettings));
+
 		// connection switch
 		this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection');
 		this.menu.addMenuItem(this.connectItem);
@@ -165,6 +176,13 @@ const NordVPN = new Lang.Class({
 			this.connectItem.setStatus('establishing...');
 			this._connect(countries[CURRENT_COUNTRY]);
 		}));
+	},
+
+	_openSettings: function () {
+		Util.spawn([
+			"gnome-shell-extension-prefs",
+			Me.uuid
+		]);
 	},
 
 	_updateTopbar: function(status){
