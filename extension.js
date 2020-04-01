@@ -168,7 +168,7 @@ const NordVPN = new Lang.Class({
 		settingsMenuItem.connect('activate', Lang.bind(this, this._openSettings));
 
 		// connection switch
-		this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection');
+		this.connectItem = new PopupMenu.PopupSwitchMenuItem('connection', false);
 		this.menu.addMenuItem(this.connectItem);
 
 		this.connectItem.connect('toggled', Lang.bind(this, (object, value) => {
