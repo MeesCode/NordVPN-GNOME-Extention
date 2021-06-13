@@ -90,7 +90,7 @@ const NordVPN = new Lang.Class({
 			let status = {};
 			stdout.split('\n').map(item => {
 				item = item.split(': ');
-				item[0] = item[0].replace('\r-\r  \r', ''); // a dash is send to stdout before showing info, this needs to be removed
+				item[0] = item[0].replace(/\r-\r  \r/g, ''); // a dash is send to stdout before showing info, this needs to be removed
 				status[item[0]] = item[1];
 			});
 
